@@ -145,10 +145,52 @@ def score(job_id: int, candidate_id: int):
 
 @app.post("/api/resumes/extract")
 async def extract_resume(file: UploadFile = File(...)):
-    # Extraction is deliberately not enabled in this starter. The existing
-    # frontend already parses PDF/DOCX in-browser; send extracted text to
-    # POST /api/candidates until a server-side parser is added.
-    filename = (file.filename or "").lower()
-    if not filename.endswith((".pdf", ".docx")):
+    """Extract selectable text from a PDF or DOCX resume."""
+    from io import BytesIO
+
+    filename = (file.filename or "").strip()
+    extension = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+    if extension not in {"pdf", "docx"}:
         raise HTTPException(415, "Upload a PDF or DOCX file")
-    raise HTTPException(501, "Server-side resume extraction is not enabled yet.")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(400, "The uploaded file is empty")
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(413, "Resume file exceeds the 10 MB limit")
+
+    try:
+        if extension == "pdf":
+            from pypdf import PdfReader
+            reader = PdfReader(BytesIO(content))
+            if reader.is_encrypted:
+                raise HTTPException(422, "Password-protected PDFs are not supported")
+            pages = reader.pages
+            text = "\\n".join((page.extract_text() or "") for page in pages)
+            page_count = len(pages)
+        else:
+            from docx import Document
+            document = Document(BytesIO(content))
+            paragraphs = [p.text for p in document.paragraphs if p.text.strip()]
+            table_text = [
+                " | ".join(cell.text.strip() for cell in row.cells if cell.text.strip())
+                for table in document.tables
+                for row in table.rows
+            ]
+            text = "\\n".join(paragraphs + [line for line in table_text if line])
+            page_count = None
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(422, "The file could not be read. Check that it is a valid, uncorrupted PDF or DOCX.")
+
+    text = text.strip()
+    if not text:
+        raise HTTPException(422, "No selectable text was found. Scanned/image-only PDFs require OCR, which is not enabled.")
+    return {
+        "filename": filename,
+        "text": text[:120000],
+        "characters": min(len(text), 120000),
+        "pages": page_count,
+        "truncated": len(text) > 120000,
+    }
