@@ -166,7 +166,7 @@ async def extract_resume(file: UploadFile = File(...)):
             if reader.is_encrypted:
                 raise HTTPException(422, "Password-protected PDFs are not supported")
             pages = reader.pages
-            text = "\\n".join((page.extract_text() or "") for page in pages)
+            text = "\n".join((page.extract_text() or "") for page in pages)
             page_count = len(pages)
         else:
             from docx import Document
@@ -177,7 +177,7 @@ async def extract_resume(file: UploadFile = File(...)):
                 for table in document.tables
                 for row in table.rows
             ]
-            text = "\\n".join(paragraphs + [line for line in table_text if line])
+            text = "\n".join(paragraphs + [line for line in table_text if line])
             page_count = None
     except HTTPException:
         raise
