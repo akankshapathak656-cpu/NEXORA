@@ -27,7 +27,7 @@ origins = [
     item.strip()
     for item in os.getenv(
         "NEXORA_CORS_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:5500,http://localhost:5500,https://nexora-beta-six-33.vercel.app",
+        "http://localhost:3000,http://127.0.0.1:5500,http://localhost:5500,https://nexora-beta-six-33.vercel.app,https://urban-space-memory-qvgqwqj744ppfj9v-5500.app.github.dev",
     ).split(",")
     if item.strip()
 ]
