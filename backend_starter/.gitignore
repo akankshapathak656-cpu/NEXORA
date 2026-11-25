@@ -1,8 +1,0 @@
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.env
-nexora.db
-*.sqlite3
-.pytest_cache/
