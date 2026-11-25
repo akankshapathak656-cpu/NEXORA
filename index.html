@@ -5111,7 +5111,7 @@
       const reg = c => { c.real = c.n; Object.defineProperty(c, 'n', { get() { return S.set && S.set.blind ? 'Candidate ' + (c.id + 1) : c.real }, set(v) { c.real = v }, configurable: true }); Object.defineProperty(c, 'sc', { get() { return sco(c, JD) }, configurable: true }) };
       C.forEach(reg);
       try { for (const k in S.fix) { const c = C[k], f = S.fix[k]; if (c && f) { c.real = clean(f.n) || c.real; c.ed = clean(f.ed) || c.ed; const x = parseEx(f.ex); if (x) c.ex = x.ex; c.r = clean(f.r) || c.r; c.pr = clean(f.pr) || c.pr; if (Array.isArray(f.sk) && f.sk.length) c.sk = [...new Set(f.sk.map(clean).filter(Boolean))] } } } catch (e) { }
-      try { S.add = (Array.isArray(S.add) ? S.add : []).filter(f => f && typeof f.n == 'string'); S.add.forEach(f => { const c = { id: C.length, n: clean(f.n) || 'Unnamed candidate', r: clean(f.r) || JOBS[0].t, st: 'New', sk: [...new Set((Array.isArray(f.sk) ? f.sk : []).map(clean).filter(Boolean))], ex: (parseEx(f.ex) || { ex: 'Fresher' }).ex, ed: clean(f.ed) || 'Not provided', pr: clean(f.pr) || 'Not provided', file: clean(f.file), em: clean(f.em), ph: clean(f.ph), lo: clean(f.lo), cert: (Array.isArray(f.cert) ? f.cert : []).map(clean).filter(Boolean).slice(0, 8), wk: (Array.isArray(f.wk) ? f.wk : []).map(clean).filter(Boolean).slice(0, 6), an: anOk(f.an) }; reg(c); C.push(c) }) } catch (e) { S.add = [] }
+      try { S.add = (Array.isArray(S.add) ? S.add : []).filter(f => f && typeof f.n == 'string'); S.add.forEach(f => { const c = { id: C.length, n: clean(f.n) || 'Unnamed candidate', r: clean(f.r) || JOBS[0].t, st: 'New', sk: [...new Set((Array.isArray(f.sk) ? f.sk : []).map(clean).filter(Boolean))], ex: (parseEx(f.ex) || { ex: 'Fresher' }).ex, ed: clean(f.ed) || 'Not provided', pr: clean(f.pr) || 'Not provided', file: clean(f.file), em: clean(f.em), ph: clean(f.ph), lo: clean(f.lo), cert: (Array.isArray(f.cert) ? f.cert : []).map(clean).filter(Boolean).slice(0, 8), wk: (Array.isArray(f.wk) ? f.wk : []).map(clean).filter(Boolean).slice(0, 6), an: anOk(f.an), apiId: Number(f.apiId) || null }; reg(c); C.push(c) }) } catch (e) { S.add = [] }
       /* Skill-name normaliser for custom jobs, so "react" and "Rest API" match the same skills the resumes use. */
       const VOC = [...new Set([...JOBS.flatMap(j => j.req), ...Object.values(XR).flat(), ...C.flatMap(c => c.sk)])], SKA = { js: 'JavaScript', ts: 'TypeScript', nodejs: 'Node.js', node: 'Node.js', 'rest api': 'REST APIs', 'rest apis': 'REST APIs', restapi: 'REST APIs', restapis: 'REST APIs', a11y: 'Accessibility', reactjs: 'React', 'react.js': 'React', vuejs: 'Vue' };
       const canon = x => { const k = x.toLowerCase().replace(/\s+/g, ' ').trim(); return SKA[k] || VOC.find(v => v.toLowerCase() == k) || x.trim() };
@@ -5236,8 +5236,22 @@
       const hd = (t, s) => `<div class="top"><div><h2>${t}</h2><p>${s}</p></div><span class="chip tr" title="No backend is connected. Scores come from a simple demo formula.">${API.live ? 'Live data' : 'Simulated demo data'}</span></div>`;
       const cs = () => `<label>Candidate <select onchange="S.sel=+this.value;S.mail='draft';render()">${ranked(C).map(c => `<option value="${c.id}" ${c.id == S.sel ? 'selected' : ''}>${E(c.n)} · ${E(c.r)}</option>`).join('')}</select></label>`;
       let tmr;
-      /* API seam: replace these with fetch() calls when the backend is ready. Today they return local sample data. */
-      const API = { live: false, parse: async f => ({ simulated: true, files: f }), score: async (c, q) => sco(c, q), roles: async c => rolesFor(c) };
+      /* Backend integration: local scoring stays authoritative; CRUD is synced to FastAPI. */
+      const API_BASE = 'https://urban-space-memory-qvgqwqj744ppfj9v-8000.app.github.dev';
+      const apiRequest = async (path, options = {}) => {
+         const response = await fetch(API_BASE + path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+         if (!response.ok) { const detail = await response.text(); throw new Error(detail || ('API request failed (' + response.status + ')')) }
+         return response.status === 204 ? null : response.json()
+      };
+      const API = {
+         live: false,
+         parse: async f => ({ simulated: true, files: f }),
+         score: async (c, q) => sco(c, q),
+         roles: async c => rolesFor(c),
+         createJob: payload => apiRequest('/api/jobs', { method: 'POST', body: JSON.stringify(payload) }),
+         createCandidate: payload => apiRequest('/api/candidates', { method: 'POST', body: JSON.stringify(payload) }),
+         updateCandidate: (id, status) => apiRequest('/api/candidates/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ status }) })
+      };
       const rolesFor = c => Object.entries(RD()).map(([r, q]) => ({ r, q, s: sco(c, q), ev: mm(c, q).ok.length / q.length })).sort((a, b) => b.s - a.s || b.ev - a.ev || a.q.length - b.q.length || a.r.localeCompare(b.r));
       /* Hidden fit rule: weak for the selected job (<65), at least 15 points higher for another role, and at least half of that role's requirements evidenced. Hired candidates are excluded. */
       const HF = { max: 65, gap: 15, cov: .5 };
@@ -5261,7 +5275,7 @@
       };
       const nxt = p => { const k = WF.findIndex(w => w[0] == p); if (k < 0) return ''; const a = WF[k - 1], b = WF[k + 1]; return `<div class="row nx">${a ? `<a class="btn sm" href="#${a[0]}">← ${a[1]}</a>` : '<span></span>'}${b ? `<a class="btn p sm" href="#${b[0]}"${b[0] == 'profile' && p == 'cands' ? ' onclick="pickDec()"' : ''}>Next: ${b[1]} →</a>` : `<a class="btn p sm" href="#dashboard">Finish and return to dashboard</a>`}</div>` };
       function setJob(i) { S.job = i; JD = JOBS[i].req; C.forEach(c => { if (c.id >= NS && c.an) { anGet(c); persist(c) } }); S.ob.done.job = 1; save(); render() }
-      function addJob(e) { e.preventDefault(); const t = $('#nt').value.trim(), sn = new Set(), q = $('#ns').value.split(',').map(canon).filter(x => x && !sn.has(x.toLowerCase()) && sn.add(x.toLowerCase())), er = $('#ne'); if (t.length < 3) return er.textContent = 'Enter a job title of at least 3 characters.', false; if (q.length < 3) return er.textContent = 'Add at least 3 required skills, separated by commas.', false; if (JOBS.some(j => j.t.toLowerCase() == t.toLowerCase())) return er.textContent = 'A job with this title already exists.', false; const j = { t, req: q, d: 'Custom job created in this session' }; JOBS.push(j); S.jobs.push(j); S.nj = 0; setJob(JOBS.length - 1); toast('Job created'); return false }
+      async function addJob(e) { e.preventDefault(); const t = $('#nt').value.trim(), sn = new Set(), q = $('#ns').value.split(',').map(canon).filter(x => x && !sn.has(x.toLowerCase()) && sn.add(x.toLowerCase())), er = $('#ne'); if (t.length < 3) return er.textContent = 'Enter a job title of at least 3 characters.', false; if (q.length < 3) return er.textContent = 'Add at least 3 required skills, separated by commas.', false; if (JOBS.some(j => j.t.toLowerCase() == t.toLowerCase())) return er.textContent = 'A job with this title already exists.', false; const j = { t, req: q, d: 'Custom job created in this session' }; try { const saved = await API.createJob({ title: t, description: j.d, required_skills: q, preferred_skills: [] }); j.apiId = saved.id } catch (err) { j.apiSyncError = true; console.error('NEXORA job sync failed:', err) } JOBS.push(j); S.jobs.push(j); S.nj = 0; setJob(JOBS.length - 1); toast(j.apiId ? 'Job created and synced' : 'Job created locally; backend sync failed'); return false }
       /* ---- Custom job description (Step 1, "Choose the job") ----
          HR pastes a complete JD. The text is split into sections with the same heading approach the resume parser uses, skills are found with the same skill dictionary (findSkills), and the result is stored as a normal job in JOBS / S.jobs. Every later step (analysis, other roles, compare, decision) therefore screens against it, and it is saved with the rest of the app state. Each extracted field records where its value came from: the pasted text ('jd'), the recruiter ('user') or nowhere ('none'). No AI model runs. */
       if (!S.jdd || typeof S.jdd != 'object' || Array.isArray(S.jdd)) S.jdd = {};
@@ -5351,7 +5365,7 @@
          d.title = u(f.title) ? f.title.v : ''; d.req = u(f.req) ? f.req.v.join(', ') : ''; d.pref = u(f.pref) ? f.pref.v.join(', ') : ''; d.exp = u(f.exp) ? f.exp.v : ''; d.edu = u(f.edu) ? f.edu.v : ''; d.resp = u(f.resp) ? f.resp.v.join('\n') : ''; d.oth = u(f.oth) ? f.oth.v.join('\n') : '';
          S.jdd = d; S.nj = 0; save(); render(); jdFocus()
       }
-      function jdSubmit(e) {
+      async function jdSubmit(e) {
          e.preventDefault(); const g = id => { const el = $('#' + id); return el ? el.value : '' }, er = $('#jx-err'),
             bad = (m, id) => { er.textContent = m; document.querySelectorAll('#jx .s3-bad').forEach(x => x.classList.remove('s3-bad')); const el = id && $('#' + id); if (el) { const dt = el.closest('details'); if (dt) dt.open = true; el.classList.add('s3-bad'); el.focus() } return false };
          const raw = g('jx-raw').replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim(), U = {}; JDF.forEach(f => U[f[0]] = g('jx-' + f[0]).trim());
@@ -5380,7 +5394,7 @@
          else if (taken(t)) { const b = t; do { t = b + ' (Custom JD' + (n > 1 ? ' ' + n : '') + ')'; n++ } while (taken(t)); note = ' A job called “' + b + '” already exists, so this one is named “' + t + '”.' }
          const jd = { raw, at: Date.now(), f }; let idx;
          if (editing) { const j = JOBS[ed]; j.t = t; j.req = req; j.d = JDDESC; j.jd = jd; idx = ed }
-         else { const j = { t, req, d: JDDESC, jd }; JOBS.push(j); S.jobs.push(j); idx = JOBS.length - 1 }
+         else { const j = { t, req, d: JDDESC, jd }; try { const saved = await API.createJob({ title: t, description: raw || JDDESC, required_skills: req, preferred_skills: pref }); j.apiId = saved.id } catch (err) { j.apiSyncError = true; console.error('NEXORA job description sync failed:', err) } JOBS.push(j); S.jobs.push(j); idx = JOBS.length - 1 }
          DK = null; S.jdd = {}; S.nj = 0; setJob(idx); toast('Job description saved and selected.' + note); return false
       }
       function jdPanel() {
@@ -5744,7 +5758,7 @@ ${ig('Hiring pipeline attention', 'Points worth a look, based on current candida
          if (f == 'Name') c.real = v.slice(0, 60); else if (f == 'Education') { c.ed = v.slice(0, 120); if (c.an) { const a = { ...c.an, edu: [], eduFix: 1 }, P = ANP.get(c.an); if (P) ANP.set(a, P); c.an = a } } else c.pr = v.slice(0, 200)
       }
       /* Edits are stored by candidate id and re-applied on load, so a correction shows everywhere the candidate appears. */
-      const persist = c => { const r = { n: c.real, ed: c.ed, ex: c.ex, r: c.r, pr: c.pr, sk: c.sk, em: c.em || '', ph: c.ph || '', lo: c.lo || '', cert: c.cert || [], wk: c.wk || [], an: c.an || null }; if (c.id < NS) S.fix[c.id] = r; else S.add[c.id - NS] = { ...r, file: c.file } };
+      const persist = c => { const r = { n: c.real, ed: c.ed, ex: c.ex, r: c.r, pr: c.pr, sk: c.sk, em: c.em || '', ph: c.ph || '', lo: c.lo || '', cert: c.cert || [], wk: c.wk || [], an: c.an || null, apiId: c.apiId || null }; if (c.id < NS) S.fix[c.id] = r; else S.add[c.id - NS] = { ...r, file: c.file } };
       function upload() {
          if (S.autorun) { S.autorun = 0; S.job = 0; JD = JOBS[0].req; S.up = sampleFiles(); S.upS = 1; S.pd = null; save(); setTimeout(run, 300) }
          if (S.stage >= 0 && S.stage < ST.length && !tmr && !S.busy) go();
@@ -5766,10 +5780,12 @@ ${jdPanel()}<div class="card" style="margin-top:16px"><h3>3. Analysis progress <
          persist(c); save(); render(); toast('Correction saved and score refreshed')
       }
       function fixD(f, el) { const d = S.pd && S.pd[S.pi]; if (!d || d.saved != null) return; const old = fv(d, f), e = setField(d, f, el.value); if (e) { el.value = old; return toast(e) } render(); toast('Field updated. Save the profile to add it to the pool') }
-      function saveD() {
+      async function saveD() {
          const d = S.pd && S.pd[S.pi]; if (!d || d.saved != null) return;
          if (!d.real) return toast('Name is required'); if (!d.ex) return toast('Enter experience first, for example “2 yrs · Role” or “Fresher”'); if (!d.sk.length) return toast('Add at least one skill before saving');
-         const c = { id: C.length, n: d.real, r: d.r, st: 'New', sk: d.sk.slice(), ex: d.ex, ed: d.ed || 'Not provided', pr: d.pr || 'Not provided', file: d.file, em: d.em || '', ph: d.ph || '', lo: d.lo || '', cert: d.cert || [], wk: d.wk || [], an: d.an || null }; reg(c); C.push(c); persist(c); d.saved = c.id; S.sel = c.id; save(); render(); toast(c.n + ' added to the candidate pool as New')
+         const c = { id: C.length, n: d.real, r: d.r, st: 'New', sk: d.sk.slice(), ex: d.ex, ed: d.ed || 'Not provided', pr: d.pr || 'Not provided', file: d.file, em: d.em || '', ph: d.ph || '', lo: d.lo || '', cert: d.cert || [], wk: d.wk || [], an: d.an || null };
+         try { const parsed = parseEx(c.ex), years = parsed && parsed.ex.toLowerCase() != 'fresher' ? (parseFloat(parsed.ex) || 0) : 0; const saved = await API.createCandidate({ name: c.real, email: c.em, experience_years: years, education: c.ed, skills: c.sk, resume_text: [c.pr, 'Skills: ' + c.sk.join(', ')].join('\n'), status: 'New' }); c.apiId = saved.id } catch (err) { console.error('NEXORA candidate sync failed:', err) }
+         reg(c); C.push(c); persist(c); d.saved = c.id; S.sel = c.id; save(); render(); toast(c.apiId ? c.n + ' added and synced to the backend' : c.n + ' added locally; backend sync failed')
       }
       function sample() { pkId++; S.busy = 0; S.up = sampleFiles(); S.upS = 1; S.pd = null; run() }
       /* Real checks on real files: extension, size, non-empty, duplicates in the selection, and the first bytes of the file (a PDF must contain %PDF-, a DOCX is a zip and must start with PK). Nothing beyond that is read. */
@@ -6041,7 +6057,7 @@ ${jdCard(c, j)}${anCard(c)}<div class="card"><div class="an-hd"><h3>Recruiter re
       const dlab = k => { const v = SN[k] || k; return v == 'Review' ? 'Needs review' : v };
       const stc = c => `<span class="chip st st-${st(c)}">${E(stl(c))}</span>`;
       const dfmt = t => { try { return new Date(t).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) } catch (e) { return '' } };
-      function commit(i, v, note) { const c = C[i]; if (!c) return; const s = SN[v] || v; S.status[i] = s; S.rec[i] = { s, t: Date.now(), n: clean(note || '').slice(0, 200) }; S.last = { id: i, s }; S.pdc = null; save(); render(); toast(c.n + ': ' + dlab(v)) }
+      function commit(i, v, note) { const c = C[i]; if (!c) return; const s = SN[v] || v; S.status[i] = s; S.rec[i] = { s, t: Date.now(), n: clean(note || '').slice(0, 200) }; S.last = { id: i, s }; S.pdc = null; save(); render(); toast(c.n + ': ' + dlab(v)); if (c.apiId) API.updateCandidate(c.apiId, s == 'Review' ? 'Needs review' : s).catch(err => { console.error('NEXORA candidate status sync failed:', err); toast('Status saved in this browser, but backend sync failed') }) }
       const setS = (i, v) => commit(i, v, '');
       function decPick(k) { const c = C[S.sel]; if (!c) return; if (k == 'Hired' && !['Interview', 'Hired'].includes(st(c))) return toast('Move the candidate to Interview before marking as hired'); S.pdc = { id: c.id, k }; S.last = null; render(); const n = $('#dnote'); if (n) n.focus({ preventScroll: false }) }
       function decCancel() { S.pdc = null; render() }
