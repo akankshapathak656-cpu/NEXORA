@@ -1,15 +1,26 @@
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
+# Codespaces keeps this file inside the workspace. For production, use a
+# persistent volume or a managed database rather than an ephemeral filesystem.
 DB_PATH = Path(os.getenv("NEXORA_DB_PATH", "nexora.db"))
 
+@contextmanager
 def connect():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    db = sqlite3.connect(DB_PATH)
+    db.row_factory = sqlite3.Row
+    db.execute("PRAGMA foreign_keys = ON")
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 def init_db():
     with connect() as db:

@@ -1,76 +1,101 @@
-[NEXORA_README.md](https://github.com/user-attachments/files/35435549/NEXORA_README.md)
 # NEXORA
 
-NEXORA is a recruiter-support prototype for explainable resume screening. It compares candidate skills with job requirements, presents missing and matched skills, and keeps hiring decisions under human control.
+NEXORA is a recruiter-support prototype for explainable resume screening. The existing frontend is a single-page HTML application. This repository also includes a FastAPI + SQLite backend starter that can be run in **GitHub Codespaces**.
 
-> **Current repository status:** The original public repository contains a single large `index.html` frontend prototype. Its own UI describes itself as a frontend demo with sample data and no connected backend. This starter adds a separate FastAPI + SQLite backend. It does not silently replace the existing UI or claim that the frontend is already wired to the API.
-
-## Features in this backend starter
-
-- FastAPI REST API with interactive Swagger docs.
-- SQLite persistence for jobs and candidates.
-- Create/list/get jobs and candidates.
-- Update candidate workflow status and delete candidates.
-- Explainable baseline score endpoint with matched/missing skill lists.
-- CORS configuration for local development and the existing Vercel frontend.
+> **Current integration status:** The backend is available as a separate API. The existing frontend still uses its own browser-side sample data and local storage; it has not yet been migrated to use these API endpoints. Do not treat the frontend as a live multi-user system until that integration, authentication, and deployment are completed.
 
 ## Repository structure
 
 ```text
 NEXORA/
-├── index.html                 # Existing frontend prototype (keep this)
+├── index.html
 ├── README.md
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py             # FastAPI routes
-│   │   ├── database.py         # SQLite connection/schema
-│   │   ├── schemas.py          # Request validation
-│   │   └── scoring.py          # Explainable baseline score
-│   ├── requirements.txt
-│   ├── .env.example
-│   └── .gitignore
-└── .gitignore
+├── LICENSE
+├── .gitignore
+├── .devcontainer/
+│   └── devcontainer.json
+└── backend/
+    ├── app/
+    │   ├── __init__.py
+    │   ├── main.py
+    │   ├── database.py
+    │   ├── schemas.py
+    │   └── scoring.py
+    ├── requirements.txt
+    ├── .env.example
+    └── .gitignore
 ```
 
-Move the contents of this starter's `app/`, `requirements.txt`, `.env.example`, and `.gitignore` into a new `backend/` directory in the existing repository. Keep the existing `index.html` at the repository root.
+## Run in GitHub Codespaces
 
-## Requirements
+1. Open this repository on GitHub.
+2. Select **Code → Codespaces** and open your Codespace.
+3. Open the integrated terminal and run:
 
-- Python 3.10+
-- pip
-
-## Run locally (Windows PowerShell)
-
-```powershell
+```bash
 cd backend
-py -m venv .venv
-.venv\Scripts\Activate.ps1
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-copy .env.example .env
+cp .env.example .env
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Codespaces will offer to forward port **8000**. Open the forwarded URL and visit:
+
+- `/` — API information
+- `/api/health` — health check
+- `/docs` — interactive Swagger API documentation
+
+Expected health response:
+
+```json
+{"status":"ok","service":"nexora-api"}
+```
+
+If port 8000 is not forwarded automatically, open the **Ports** panel, choose **Add Port**, enter `8000`, and open the forwarded address. Keep the API server running in the terminal while testing.
+
+## Run locally (optional)
+
+Requires Python 3.10 or newer:
+
+```bash
+cd backend
+python -m venv .venv
+# macOS/Linux
+source .venv/bin/activate
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
+pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-If PowerShell blocks activation, run:
+## API endpoints
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.venv\Scripts\Activate.ps1
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/health` | Health check |
+| POST | `/api/jobs` | Create a job |
+| GET | `/api/jobs` | List jobs |
+| GET | `/api/jobs/{job_id}` | Get one job |
+| POST | `/api/candidates` | Create a candidate |
+| GET | `/api/candidates` | List candidates |
+| GET | `/api/candidates/{candidate_id}` | Get one candidate |
+| PATCH | `/api/candidates/{candidate_id}/status` | Update candidate status |
+| DELETE | `/api/candidates/{candidate_id}` | Delete candidate |
+| POST | `/api/jobs/{job_id}/score/{candidate_id}` | Calculate an explainable baseline score |
+
+### Example requests
+
+Set the API URL to the forwarded Codespaces port-8000 URL:
+
+```bash
+export API_URL="https://YOUR-CODESPACE-8000.app.github.dev"
 ```
-
-API URLs:
-
-- Health: http://127.0.0.1:8000/api/health
-- Swagger docs: http://127.0.0.1:8000/docs
-- Jobs: http://127.0.0.1:8000/api/jobs
-- Candidates: http://127.0.0.1:8000/api/candidates
-
-## Example API requests
 
 Create a job:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/jobs \
+curl -X POST "$API_URL/api/jobs" \
   -H "Content-Type: application/json" \
   -d '{"title":"Python Developer","description":"Backend role","required_skills":["Python","FastAPI","SQL"],"preferred_skills":["Docker","AWS"]}'
 ```
@@ -78,83 +103,54 @@ curl -X POST http://127.0.0.1:8000/api/jobs \
 Create a candidate:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/candidates \
+curl -X POST "$API_URL/api/candidates" \
   -H "Content-Type: application/json" \
   -d '{"name":"Demo Candidate","email":"demo@example.com","experience_years":2,"education":"B.Tech","skills":["Python","SQL"],"resume_text":"Built APIs using Python and FastAPI."}'
 ```
 
-Score candidate 1 against job 1:
+## Frontend integration status
 
-```bash
-curl -X POST http://127.0.0.1:8000/api/jobs/1/score/1
-```
+The current `index.html` contains an API placeholder and uses browser local storage and sample records. The backend API is not automatically connected just because it exists. The frontend's original seven-part scoring logic is also different from the backend's starter score.
 
-## Connect the existing frontend
+The next integration step is to map the frontend's candidate and job data to the API payloads, then replace local-only persistence with API calls. Keep the existing browser-side resume parser unless server-side PDF/DOCX parsing is deliberately added. Do not simply change an `API.live` flag to true.
 
-The existing `index.html` defines an API placeholder around its `API` object and currently marks `API.live` as false. Replace that placeholder only after the backend is running.
+## Configuration
 
-Example frontend helper:
+Copy `.env.example` to `.env`. Set `NEXORA_CORS_ORIGINS` to the exact origin(s) of the frontend that will call the API. Do not use a wildcard origin in a production deployment.
 
-```js
-const API_BASE = "http://127.0.0.1:8000";
+`NEXORA_DB_PATH` defaults to `nexora.db` in the backend working directory. In Codespaces, the database file remains in the workspace, but it is not a managed production database. Back up important data.
 
-async function apiRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
-  });
+## Deployment
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(`API ${response.status}: ${message}`);
-  }
+The static frontend can remain on Vercel. Deploy the backend separately on a Python-capable host.
 
-  if (response.status === 204) return null;
-  return response.json();
-}
+- Backend root directory: `backend`
+- Build/install: `pip install -r requirements.txt`
+- Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- Configure `NEXORA_CORS_ORIGINS` to the exact deployed frontend origin.
+- Use persistent storage or managed PostgreSQL for production data.
 
-// Example:
-const jobs = await apiRequest("/api/jobs");
-const candidates = await apiRequest("/api/candidates");
-```
-
-For deployment, set `API_BASE` to your deployed backend URL (HTTPS), not localhost. Do not put private API keys or database credentials in `index.html`.
-
-**Important integration note:** The current frontend has its own candidate/job data structures and scoring functions. The backend starter uses a simpler JSON contract. A developer must map the frontend's existing state to these API payloads and replace the local-storage/sample-data calls incrementally. Do not just set `API.live = true`; that flag alone does not connect anything.
-
-## Deploying
-
-The existing frontend can remain on Vercel as a static site. Deploy the `backend/` folder as a separate Python web service (for example, a host that supports FastAPI). Configure:
-
-- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Root directory: `backend`
-- Environment variable `NEXORA_CORS_ORIGINS` to your exact Vercel frontend origin.
-- A persistent disk/volume for `nexora.db`, or replace SQLite with a managed PostgreSQL database for multi-user production use.
-
-The database file must live on persistent storage; ephemeral deployment filesystems can erase SQLite data on restart/redeploy.
+A Codespaces forwarded URL is intended for development/testing, not as a permanent production API URL.
 
 ## Scoring and responsible use
 
-The starter's score is a transparent baseline: required skills 70%, preferred skills 20%, experience 10%. It is not the same as the original frontend's seven-part formula. Review and tune the formula with real job-related validation before use.
+The backend starter score is a transparent prototype formula: required skills 70%, preferred skills 20%, and experience 10%. It is not the same as the existing frontend's seven-part formula and has not been validated for hiring decisions.
 
-- A score is not a hiring decision.
+- A score is an advisory aid, not a hiring decision.
 - Do not score protected traits or infer them from names, photos, addresses, or other personal attributes.
-- Review the original resume and evidence for every candidate.
-- Obtain appropriate consent and follow applicable privacy/employment laws before uploading or retaining resumes.
-- Add authentication, authorization, audit logging, rate limiting, file validation, malware scanning, retention/deletion controls, and production database migrations before handling real candidate data.
+- A human reviewer must inspect the resume and evidence.
+- Obtain appropriate consent and follow applicable privacy and employment laws before storing resumes.
+- Add authentication, authorization, audit logging, rate limiting, retention/deletion controls, and production database migrations before using real candidate data.
 
-## Current limitations
+## Known limitations
 
-- No authentication or multi-tenant isolation.
-- Resume extraction endpoint intentionally returns `501`; PDF/DOCX parsing is not enabled in this starter.
+- No recruiter authentication or multi-tenant isolation.
+- Server-side PDF/DOCX extraction is not enabled; the endpoint returns HTTP 501. The existing frontend currently parses files in the browser.
 - No OCR for scanned documents.
 - No email delivery.
-- No automated hiring or rejection.
-- SQLite is suitable for local prototyping, not a concurrent production recruiting platform.
+- SQLite is suitable for a prototype, not a concurrent production recruiting platform.
+- Frontend-to-backend integration is still pending.
 
 ## License
 
-Add a license file before distributing this project.
+See [LICENSE](LICENSE).

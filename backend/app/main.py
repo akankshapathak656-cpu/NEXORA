@@ -1,10 +1,12 @@
 import json
+import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, UploadFile, File
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import connect, init_db
-from .schemas import JobCreate, CandidateCreate, StatusUpdate
+from .schemas import CandidateCreate, JobCreate, StatusUpdate
 from .scoring import score_candidate
 
 @asynccontextmanager
@@ -12,16 +14,28 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="NEXORA API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="NEXORA API",
+    description="Prototype API for NEXORA recruiter-support workflows.",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
-# Set NEXORA_CORS_ORIGINS to your deployed frontend URL in production.
-import os
-origins = os.getenv("NEXORA_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:5500,http://localhost:5500,https://nexora-beta-six-33.vercel.app").split(",")
+# Set this to the exact frontend origin(s) in deployment. In Codespaces,
+# use the forwarded frontend origin if the frontend is served on another port.
+origins = [
+    item.strip()
+    for item in os.getenv(
+        "NEXORA_CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:5500,http://localhost:5500,https://nexora-beta-six-33.vercel.app",
+    ).split(",")
+    if item.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[x.strip() for x in origins if x.strip()],
+    allow_origins=origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -54,14 +68,14 @@ def create_job(payload: JobCreate):
     with connect() as db:
         cur = db.execute(
             "INSERT INTO jobs(title, description, required_skills, preferred_skills) VALUES(?,?,?,?)",
-            (payload.title, payload.description, json.dumps(payload.required_skills), json.dumps(payload.preferred_skills))
+            (payload.title, payload.description, json.dumps(payload.required_skills), json.dumps(payload.preferred_skills)),
         )
         return decode_job(db.execute("SELECT * FROM jobs WHERE id=?", (cur.lastrowid,)).fetchone())
 
 @app.get("/api/jobs")
 def list_jobs():
     with connect() as db:
-        return [decode_job(r) for r in db.execute("SELECT * FROM jobs ORDER BY id DESC")]
+        return [decode_job(row) for row in db.execute("SELECT * FROM jobs ORDER BY id DESC")]
 
 @app.get("/api/jobs/{job_id}")
 def get_job(job_id: int):
@@ -78,14 +92,14 @@ def create_candidate(payload: CandidateCreate):
             """INSERT INTO candidates(name,email,experience_years,education,skills,resume_text,status)
                VALUES(?,?,?,?,?,?,?)""",
             (payload.name, payload.email, payload.experience_years, payload.education,
-             json.dumps(payload.skills), payload.resume_text, payload.status)
+             json.dumps(payload.skills), payload.resume_text, payload.status),
         )
         return decode_candidate(db.execute("SELECT * FROM candidates WHERE id=?", (cur.lastrowid,)).fetchone())
 
 @app.get("/api/candidates")
 def list_candidates():
     with connect() as db:
-        return [decode_candidate(r) for r in db.execute("SELECT * FROM candidates ORDER BY id DESC")]
+        return [decode_candidate(row) for row in db.execute("SELECT * FROM candidates ORDER BY id DESC")]
 
 @app.get("/api/candidates/{candidate_id}")
 def get_candidate(candidate_id: int):
@@ -123,17 +137,18 @@ def score(job_id: int, candidate_id: int):
         raise HTTPException(404, "Job not found")
     if not candidate:
         raise HTTPException(404, "Candidate not found")
-    return {"job": {"id": job["id"], "title": job["title"]},
-            "candidate": {"id": candidate["id"], "name": candidate["name"]},
-            **score_candidate(candidate, job)}
+    return {
+        "job": {"id": job["id"], "title": job["title"]},
+        "candidate": {"id": candidate["id"], "name": candidate["name"]},
+        **score_candidate(candidate, job),
+    }
 
 @app.post("/api/resumes/extract")
 async def extract_resume(file: UploadFile = File(...)):
-    """
-    Optional extraction endpoint. PDF/DOCX extraction is intentionally not
-    implemented in this minimal starter; add vetted parsers before enabling it.
-    """
-    name = (file.filename or "").lower()
-    if not (name.endswith(".pdf") or name.endswith(".docx")):
+    # Extraction is deliberately not enabled in this starter. The existing
+    # frontend already parses PDF/DOCX in-browser; send extracted text to
+    # POST /api/candidates until a server-side parser is added.
+    filename = (file.filename or "").lower()
+    if not filename.endswith((".pdf", ".docx")):
         raise HTTPException(415, "Upload a PDF or DOCX file")
-    raise HTTPException(501, "Resume extraction is not enabled yet. Extract text in the browser or add PDF/DOCX parsers.")
+    raise HTTPException(501, "Server-side resume extraction is not enabled yet.")
