@@ -419,3 +419,38 @@ def test_score_cache_invalidates_on_mode_switch_and_no_error_leak(client, monkey
     assert len(batch.json()["errors"]) == 1
     assert "sk-secret-token-123" not in batch.text
     assert batch.json()["errors"][0]["error"] == "Analysis failed (RuntimeError)"
+
+
+def test_upsert_updates_in_place_and_invalidates_stale_cache(client):
+    j1 = client.post("/api/jobs?upsert=true", json={"title": "Frontend Developer", "required_skills": ["React"]}).json()
+    c1 = client.post(
+        "/api/candidates?upsert=true",
+        json={"name": "Rahul Sharma", "email": "rahul@example.com", "resume_text": "Short stub"},
+    ).json()
+
+    s1 = client.post(f"/api/jobs/{j1['id']}/score/{c1['id']}").json()
+    assert s1["cached"] is False
+
+    # Upsert same candidate with richer resume_text -> same id, cache invalidated
+    c2 = client.post(
+        "/api/candidates?upsert=true",
+        json={
+            "name": "Rahul Sharma",
+            "email": "rahul@example.com",
+            "resume_text": "Built production React and TypeScript applications for 3 years.",
+        },
+    ).json()
+    assert c2["id"] == c1["id"]
+    assert "TypeScript" in c2["resume_text"]
+
+    s2 = client.post(f"/api/jobs/{j1['id']}/score/{c2['id']}").json()
+    assert s2["cached"] is False
+    assert s2["score"] > s1["score"]
+
+    # Upsert same job with expanded requirements -> same id, no duplicate job row
+    j2 = client.post(
+        "/api/jobs?upsert=true",
+        json={"title": "Frontend Developer", "required_skills": ["React", "TypeScript"]},
+    ).json()
+    assert j2["id"] == j1["id"]
+    assert len(client.get("/api/jobs").json()) == 1

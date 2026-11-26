@@ -30,7 +30,7 @@ TIER_CREDIT: dict[str, float] = {
     "N": 0.0,
 }
 
-DEFAULT_EXPERIENCE_CAP = 5.0
+DEFAULT_EXPERIENCE_CAP = 3.0
 DISCLAIMER = (
     "Advisory screening aid only. A human must review the resume and make every hiring decision."
 )

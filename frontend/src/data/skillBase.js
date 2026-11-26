@@ -1,0 +1,25 @@
+// Base skill dictionary. Port of legacy K() and SKD (app.js lines 505-527). Owner: lead.
+// `K` entries: { n: canonical name, c: category, a: aliases, s: case-sensitive spellings in the Skills section, k: spellings counted anywhere, x: exclusion regex }.
+      export const K = (n, c, a, s, k, noName, x) => ({ n, c, a: (noName ? [] : [n.toLowerCase()]).concat(a || []), s: s || [], k: k || [], x: x || '' });
+      export const SKD = [
+         K('JavaScript', 'lang', ['ecmascript', 'es6', 'es2015', 'es2020', 'vanilla js']), K('TypeScript', 'lang'), K('Python', 'lang', ['python3']), K('Java', 'lang', ['core java', 'j2ee']),
+         K('C', 'lang', [], ['C'], [], 1), K('C++', 'lang', ['cpp']), K('C#', 'lang', ['c sharp', 'csharp']), K('Go', 'lang', ['golang'], ['Go'], [], 1), K('Rust', 'lang', [], ['Rust'], [], 1), K('Ruby', 'lang', [], ['Ruby'], [], 1),
+         K('PHP', 'lang'), K('Swift', 'lang', [], ['Swift'], [], 1), K('Kotlin', 'lang'), K('Dart', 'lang'), K('R', 'lang', [], ['R'], [], 1), K('SQL', 'lang', ['t-sql', 'pl/sql', 'plsql']),
+         K('HTML', 'lang', ['html5']), K('CSS', 'lang', ['css3']), K('Sass', 'lang', ['scss']), K('Bash', 'lang', ['shell scripting', 'shell script', 'shell scripts']), K('PowerShell', 'lang'), K('MATLAB', 'lang'), K('Scala', 'lang'), K('Perl', 'lang'),
+         K('React', 'fw', ['reactjs', 'react.js', 'react js'], [], [], 0, '\\s+native'), K('React Native', 'fw'), K('React Testing Library', 'fw'), K('Next.js', 'fw', ['nextjs', 'next js']), K('Redux', 'fw'), K('Vue', 'fw', ['vue.js', 'vuejs', 'vue js']), K('Nuxt', 'fw', ['nuxt.js', 'nuxtjs']),
+         K('Angular', 'fw', ['angularjs', 'angular.js']), K('Svelte', 'fw'), K('jQuery', 'fw'), K('Node.js', 'fw', ['nodejs', 'node js'], ['Node']), K('Express', 'fw', ['express.js', 'expressjs'], ['Express'], [], 1),
+         K('Flask', 'fw'), K('Django', 'fw'), K('FastAPI', 'fw', ['fast api']), K('Spring Boot', 'fw', ['springboot'], ['Spring']), K('Hibernate', 'fw'), K('Laravel', 'fw'), K('Ruby on Rails', 'fw', [], ['Rails']),
+         K('.NET', 'fw', ['dotnet', 'asp.net', '.net core']), K('Tailwind CSS', 'fw', ['tailwindcss', 'tailwind']), K('Bootstrap', 'fw'), K('Material UI', 'fw', ['material-ui']), K('Chakra UI', 'fw'),
+         K('NumPy', 'fw'), K('Pandas', 'fw'), K('scikit-learn', 'fw', ['sklearn', 'scikit learn']), K('TensorFlow', 'fw'), K('PyTorch', 'fw'), K('Keras', 'fw'), K('Matplotlib', 'fw'), K('OpenCV', 'fw'),
+         K('Git', 'tool', ['github', 'gitlab', 'bitbucket', 'version control']), K('Docker', 'tool'), K('Kubernetes', 'tool', ['k8s']), K('AWS', 'tool', ['amazon web services']), K('Azure', 'tool'), K('GCP', 'tool', ['google cloud']), K('Linux', 'tool'),
+         K('CI/CD', 'tool', ['ci cd', 'continuous integration', 'github actions', 'gitlab ci']), K('Jenkins', 'tool'), K('Terraform', 'tool'), K('Nginx', 'tool'),
+         K('REST APIs', 'tool', ['rest api', 'restful', 'restful api', 'restful apis', 'rest services', 'restful services', 'api development', 'api design', 'api integration'], [], ['REST']),
+         K('GraphQL', 'tool'), K('Postman', 'tool'), K('Swagger', 'tool', ['openapi']), K('MongoDB', 'tool', ['mongo db', 'mongoose']), K('MySQL', 'tool'), K('PostgreSQL', 'tool', ['postgres']), K('SQLite', 'tool'), K('Redis', 'tool'), K('Firebase', 'tool'), K('Elasticsearch', 'tool'), K('Kafka', 'tool'),
+         K('Figma', 'tool'), K('Adobe XD', 'tool'), K('Sketch', 'tool', [], ['Sketch'], [], 1), K('Photoshop', 'tool'), K('WordPress', 'tool'), K('Webpack', 'tool'), K('Vite', 'tool', ['vitejs']), K('npm', 'tool', ['yarn', 'pnpm']), K('Babel', 'tool'), K('ESLint', 'tool'), K('Storybook', 'tool'),
+         K('Jira', 'tool'), K('Agile', 'tool', ['scrum', 'kanban']), K('Excel', 'tool', ['ms excel', 'microsoft excel', 'advanced excel'], ['Excel'], [], 1), K('Power BI', 'tool', ['powerbi']), K('Tableau', 'tool'),
+         K('Jest', 'tool'), K('Vitest', 'tool'), K('Cypress', 'tool'), K('Selenium', 'tool'), K('Pytest', 'tool'), K('JUnit', 'tool'), K('Playwright', 'tool'), K('Mocha', 'tool'),
+         K('Testing', 'tool', ['unit testing', 'unit tests', 'unit test', 'integration testing', 'integration tests', 'test automation', 'automated testing', 'tdd', 'test-driven development', 'e2e testing', 'end-to-end testing', 'jest', 'vitest', 'pytest', 'junit', 'mocha', 'cypress', 'selenium', 'playwright', 'react testing library', 'testing library']),
+         K('Accessibility', 'tool', ['a11y', 'wcag', 'wai-aria', 'accessible design', 'accessible components', 'accessible component', 'accessible ui', 'screen reader', 'screen readers']),
+         K('Responsive Design', 'tool', ['responsive web design', 'mobile-first', 'mobile first', 'responsive layouts']), K('UI/UX Design', 'tool', ['ux design', 'ui design', 'user experience', 'wireframing', 'prototyping', 'user research']),
+         K('OOP', 'tool', ['object-oriented programming', 'object oriented programming']), K('Data Structures', 'tool', ['dsa']), K('Algorithms', 'tool'), K('Machine Learning', 'tool'),
+         K('Vercel', 'tool'), K('Netlify', 'tool'), K('Heroku', 'tool')];

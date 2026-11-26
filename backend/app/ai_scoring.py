@@ -49,7 +49,10 @@ def get_ai_config() -> dict:
         base_url = base_url[: -len("/chat/completions")].rstrip("/")
     model = os.getenv("LLM_MODEL", "gpt-4o-mini").strip() or "gpt-4o-mini"
     timeout = _safe_float(os.getenv("LLM_TIMEOUT_SECONDS"), 60.0, minimum=1.0)
-    max_concurrency = _safe_int(os.getenv("LLM_MAX_CONCURRENCY"), 4, minimum=1, maximum=20)
+    max_concurrency = _safe_int(os.getenv("LLM_MAX_CONCURRENCY"), 8, minimum=1, maximum=20)
+    reasoning_effort = os.getenv("LLM_REASONING_EFFORT", "").strip().lower()
+    if reasoning_effort not in {"none", "minimal", "low", "medium", "high", "xhigh", "max"}:
+        reasoning_effort = ""
     fallback = os.getenv("LLM_FALLBACK_HEURISTIC", "true").strip().lower() not in {"0", "false", "no"}
     return {
         "enabled": bool(api_key),
@@ -58,6 +61,7 @@ def get_ai_config() -> dict:
         "model": model,
         "timeout": timeout,
         "max_concurrency": max_concurrency,
+        "reasoning_effort": reasoning_effort,
         "fallback_heuristic": fallback,
     }
 
@@ -110,6 +114,8 @@ async def _chat_json(system_prompt: str, user_prompt: str, config: dict) -> dict
             {"role": "user", "content": user_prompt},
         ],
     }
+    if config.get("reasoning_effort"):
+        payload["reasoning_effort"] = config["reasoning_effort"]
     async with httpx.AsyncClient(timeout=config["timeout"]) as client:
         response = await client.post(url, headers=headers, json=payload)
         response.raise_for_status()
@@ -172,14 +178,20 @@ Return a single valid JSON object with this exact shape:
 }
 
 Skill tier definitions:
-- D: Demonstrated with concrete action/usage in Experience or Projects (full credit = 1.0)
-- E: Explicitly claimed with context/proficiency outside a bare list (full credit = 1.0)
-- M: Mentioned only in a bare skills list with no usage context (half credit = 0.5)
-- I: Inferred from related tools/frameworks only (credit = 0.0)
-- N: Not found in the resume (credit = 0.0)
+- D (full credit = 1.0): Demonstrated with concrete action/usage in Experience or Projects.
+- E (full credit = 1.0): Explicitly claimed with proficiency or clear context outside a bare list.
+- M (half credit = 0.5): Mentioned only in a bare skills list with no project or job usage context.
+- I (credit = 0.0): Inferred from related tools/frameworks only, not explicitly stated.
+- N (credit = 0.0): Not found anywhere in the resume.
 
-Include an entry in skill_evidence for EVERY required_skill and preferred_skill from the JD, plus notable additional skills found in the resume.
-Each component fraction must be between 0.0 and 1.0. Set applicable=false for edu if the JD specifies no education requirement, and applicable=false for resp if the JD specifies no responsibilities."""
+Component assessment guidelines (fractions 0.0 to 1.0):
+- exp: Compare relevant experience against JD experience_min (or 3 years if unspecified).
+- proj: Evaluate how well the candidate's projects demonstrate skills relevant to the JD.
+- ctx: Evaluate how many JD required skills are demonstrated inside dated work experience entries.
+- edu: Set applicable=false if the JD specifies no education requirement.
+- resp: Set applicable=false if the JD specifies no responsibilities list.
+
+Include an entry in skill_evidence for EVERY required_skill and preferred_skill from the JD, plus notable additional skills found in the resume."""
 
 
 POOL_SYSTEM_PROMPT = """You are NEXORA's recruiting intelligence synthesizer.

@@ -187,24 +187,64 @@ def ai_status():
         "ai_enabled": cfg["enabled"],
         "mode": "ai" if cfg["enabled"] else "heuristic",
         "model": cfg["model"] if cfg["enabled"] else "heuristic-v1",
+        "reasoning_effort": cfg["reasoning_effort"] or None,
+        "max_concurrency": cfg["max_concurrency"],
         "base_url_configured": bool(cfg["base_url"]),
     }
 
 
 @app.post("/api/jobs", status_code=201)
-def create_job(payload: JobCreate):
+def create_job(payload: JobCreate, upsert: bool = Query(default=False)):
+    req_json = json.dumps(payload.required_skills)
+    pref_json = json.dumps(payload.preferred_skills)
+    resp_json = json.dumps(payload.responsibilities)
     with connect() as db:
+        if upsert:
+            existing = db.execute(
+                "SELECT * FROM jobs WHERE lower(title) = lower(?) ORDER BY id DESC LIMIT 1",
+                (payload.title,),
+            ).fetchone()
+            if existing:
+                changed = (
+                    existing["description"] != payload.description
+                    or existing["required_skills"] != req_json
+                    or existing["preferred_skills"] != pref_json
+                    or existing["experience_min"] != payload.experience_min
+                    or existing["education"] != payload.education
+                    or (existing["responsibilities"] or "[]") != resp_json
+                )
+                if changed:
+                    db.execute(
+                        """UPDATE jobs
+                           SET title=?, description=?, required_skills=?, preferred_skills=?,
+                               experience_min=?, education=?, responsibilities=?
+                           WHERE id=?""",
+                        (
+                            payload.title,
+                            payload.description,
+                            req_json,
+                            pref_json,
+                            payload.experience_min,
+                            payload.education,
+                            resp_json,
+                            existing["id"],
+                        ),
+                    )
+                    db.execute("DELETE FROM candidate_analyses WHERE job_id=?", (existing["id"],))
+                    db.execute("DELETE FROM job_overviews WHERE job_id=?", (existing["id"],))
+                return decode_job(db.execute("SELECT * FROM jobs WHERE id=?", (existing["id"],)).fetchone())
+
         cur = db.execute(
             """INSERT INTO jobs(title, description, required_skills, preferred_skills, experience_min, education, responsibilities)
                VALUES(?,?,?,?,?,?,?)""",
             (
                 payload.title,
                 payload.description,
-                json.dumps(payload.required_skills),
-                json.dumps(payload.preferred_skills),
+                req_json,
+                pref_json,
                 payload.experience_min,
                 payload.education,
-                json.dumps(payload.responsibilities),
+                resp_json,
             ),
         )
         return decode_job(db.execute("SELECT * FROM jobs WHERE id=?", (cur.lastrowid,)).fetchone())
@@ -226,8 +266,51 @@ def get_job(job_id: int):
 
 
 @app.post("/api/candidates", status_code=201)
-def create_candidate(payload: CandidateCreate):
+def create_candidate(payload: CandidateCreate, upsert: bool = Query(default=False)):
+    skills_json = json.dumps(payload.skills)
     with connect() as db:
+        if upsert:
+            existing = None
+            if payload.email.strip():
+                existing = db.execute(
+                    "SELECT * FROM candidates WHERE lower(email) = lower(?) ORDER BY id DESC LIMIT 1",
+                    (payload.email.strip(),),
+                ).fetchone()
+            if not existing:
+                existing = db.execute(
+                    "SELECT * FROM candidates WHERE lower(name) = lower(?) ORDER BY id DESC LIMIT 1",
+                    (payload.name.strip(),),
+                ).fetchone()
+            if existing:
+                changed = (
+                    existing["resume_text"] != payload.resume_text
+                    or existing["skills"] != skills_json
+                    or existing["experience_years"] != payload.experience_years
+                    or existing["education"] != payload.education
+                    or existing["email"] != payload.email
+                    or existing["phone"] != payload.phone
+                )
+                if changed:
+                    db.execute(
+                        """UPDATE candidates
+                           SET name=?, email=?, phone=?, experience_years=?, education=?,
+                               skills=?, resume_text=?, filename=?
+                           WHERE id=?""",
+                        (
+                            payload.name,
+                            payload.email,
+                            payload.phone,
+                            payload.experience_years,
+                            payload.education,
+                            skills_json,
+                            payload.resume_text,
+                            payload.filename,
+                            existing["id"],
+                        ),
+                    )
+                    db.execute("DELETE FROM candidate_analyses WHERE candidate_id=?", (existing["id"],))
+                return decode_candidate(db.execute("SELECT * FROM candidates WHERE id=?", (existing["id"],)).fetchone())
+
         cur = db.execute(
             """INSERT INTO candidates(name,email,phone,experience_years,education,skills,resume_text,filename,status)
                VALUES(?,?,?,?,?,?,?,?,?)""",
@@ -237,7 +320,7 @@ def create_candidate(payload: CandidateCreate):
                 payload.phone,
                 payload.experience_years,
                 payload.education,
-                json.dumps(payload.skills),
+                skills_json,
                 payload.resume_text,
                 payload.filename,
                 payload.status,
