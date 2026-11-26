@@ -169,11 +169,11 @@ Return a single valid JSON object with this exact shape:
     "ctx": {"applicable": true, "fraction": 0.0, "note": "string"}
   },
   "overview": {
-    "headline": "concise 1-line recruiter verdict",
-    "summary": "2-3 sentence evidence-backed recruiter brief",
-    "strengths": ["3-5 concrete highlights"],
-    "gaps": ["missing or unverified JD requirements"],
-    "interview_questions": ["2-3 targeted questions probing gaps or low-confidence claims"]
+    "headline": "punchy 1-line recruiter verdict (max 14 words)",
+    "summary": "short 1-2 sentence evidence-backed description (max 35 words)",
+    "strengths": ["3-4 short concrete highlights (max 14 words each)"],
+    "gaps": ["short missing/unverified JD items (max 14 words each)"],
+    "interview_questions": ["2-3 crisp targeted questions probing gaps (max 18 words each)"]
   }
 }
 
@@ -200,13 +200,13 @@ Never invent candidates, scores, or facts not present in the input.
 
 Return a single valid JSON object with this exact shape:
 {
-  "executive_summary": "3-4 sentence recruiter brief on overall pool quality, standout picks, and readiness",
+  "executive_summary": "short 2-sentence recruiter brief on pool quality and standout picks (max 40 words)",
   "top_picks": [
-    {"candidate_id": 1, "name": "string", "score": 85, "reason": "1-sentence comparative reason"}
+    {"candidate_id": 1, "name": "string", "score": 85, "reason": "crisp 1-line comparative reason (max 14 words)"}
   ],
-  "common_strengths": ["up to 4 pool-wide strengths with counts"],
-  "common_gaps": ["up to 4 pool-wide bottlenecks/gaps with counts"],
-  "sourcing_signal": "1-2 sentence recommendation on interviewing top picks vs widening sourcing"
+  "common_strengths": ["up to 4 short pool-wide strengths with counts"],
+  "common_gaps": ["up to 4 short pool-wide gaps with counts"],
+  "sourcing_signal": "1 concise sentence on interviewing top picks vs widening sourcing (max 22 words)"
 }"""
 
 
