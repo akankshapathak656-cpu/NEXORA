@@ -16,6 +16,10 @@ export default function App() {
     document.documentElement.dataset.theme = theme || 'light';
   }, [theme]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [route]);
+
   // Sign-in guard. Unauthenticated users are sent to login, remembering where they were going (state.next).
   // Signed-in users who open login are sent to the dashboard.
   useEffect(() => {

@@ -50,6 +50,9 @@ export default function AppShell({ route }) {
 
   useEffect(() => {
     document.title = 'NEXORA | ' + (PAGE_LABELS[route] || 'Shortlists you can explain');
+    window.scrollTo(0, 0);
+    const main = document.getElementById('m');
+    if (main) main.scrollTop = 0;
   }, [route]);
 
   // Escape closes the drawer, the menu, or the compare modal, as legacy did.
