@@ -29,6 +29,7 @@ export function AnalysisOverlay() {
       role="dialog"
       aria-modal="true"
       aria-label="Analysing candidate pool"
+      className="nx-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -43,7 +44,7 @@ export function AnalysisOverlay() {
       }}
     >
       <div
-        className="card"
+        className="card nx-modal"
         style={{
           maxWidth: 460,
           width: '92%',
@@ -66,7 +67,7 @@ export function AnalysisOverlay() {
 
         <p style={{ margin: '8px 0 16px', fontWeight: 600, color: 'var(--tx)' }}>{jobTitle}</p>
 
-        <div className="bar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} role="progressbar">
+        <div className={phase === 'collating' ? 'bar nx-bar-shimmer' : 'bar'} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} role="progressbar">
           <i style={{ width: `${pct}%`, transition: 'width 240ms ease' }} />
         </div>
 

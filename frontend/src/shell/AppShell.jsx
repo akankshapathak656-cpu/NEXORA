@@ -1,6 +1,6 @@
 // App layout: sidebar, top bar, workflow stepper, page body and prev/next links.
 // Port of legacy shell() (app.js lines 156-161) and the top-bar and profile-menu markup.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppState, setState } from '../store/state.js';
 import { candidatesFromState, pendingCount } from '../store/candidates.js';
 import { NAV_GROUPS, PAGE_LABELS } from '../data/nav.js';
@@ -17,6 +17,7 @@ import { Stepper } from '../components/ui/Stepper.jsx';
 import { Footer } from '../components/ui/Footer.jsx';
 import CompareModal from '../components/CompareModal.jsx';
 import AnalysisOverlay from '../components/AnalysisOverlay.jsx';
+import WorkspaceMotion from '../components/WorkspaceMotion.jsx';
 import { revealOnScroll } from '../components/revealOnScroll.js';
 
 // Port of legacy pickDec(): the best-ranked compared candidate becomes the decision candidate.
@@ -31,6 +32,7 @@ export default function AppShell({ route }) {
   const state = useAppState();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const themeTimer = useRef(null);
   const candidates = candidatesFromState(state);
   const jobs = allJobs(state);
   const job = jobs[state.job] || jobs[0];
@@ -62,9 +64,24 @@ export default function AppShell({ route }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [state.cm]);
 
+  useEffect(() => () => {
+    clearTimeout(themeTimer.current);
+    document.documentElement.classList.remove('s3-th');
+  }, []);
+
   const toggleTheme = () => {
-    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = next;
+    const root = document.documentElement;
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduced) {
+      root.classList.add('s3-th');
+      clearTimeout(themeTimer.current);
+      themeTimer.current = setTimeout(() => {
+        root.classList.remove('s3-th');
+        themeTimer.current = null;
+      }, 420);
+    }
+    const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+    root.dataset.theme = next;
     setState({ thm: next });
   };
 
@@ -119,7 +136,7 @@ export default function AppShell({ route }) {
             <input id="gs" name="gs" type="search" placeholder="Search candidates or skills…" defaultValue={state.q} />
           </form>
           <div className="sp" />
-          <span className={(state.aiConfig && state.aiConfig.ai_enabled ? 'chip ok' : 'chip tr') + ' pn'}>
+          <span className={(state.aiConfig && state.aiConfig.ai_enabled ? 'chip ok s2-live' : 'chip tr') + ' pn'}>
             {state.aiConfig
               ? state.aiConfig.ai_enabled
                 ? 'AI live · ' + (state.aiConfig.model || 'LLM')
@@ -132,7 +149,7 @@ export default function AppShell({ route }) {
           </a>
           <div className="pm">
             <button className="pbtn" aria-haspopup="menu" aria-expanded={menuOpen} onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }}>
-              <Avatar name={state.set.name} size={34} />
+              <span style={{ display: "inline-flex" }}><Avatar name={state.set.name} size={34} /></span>
               <span className="pn">{state.set.name}</span>
               <span aria-hidden="true">▾</span>
             </button>
@@ -145,8 +162,11 @@ export default function AppShell({ route }) {
         </div>
 
         <main id="m" tabIndex={-1}>
-          <Stepper current={route} jobTitle={job.t} steps={WF} onPickDecision={pickDecision} />
-          <Page route={route} candidates={candidates} job={job} />
+          <div className="page-stack">
+            <Stepper current={route} jobTitle={job.t} steps={WF} onPickDecision={pickDecision} />
+            <div key={route} className="nx-page-enter page-stack">
+              <Page route={route} candidates={candidates} job={job} />
+            </div>
           {stepIndex >= 0 ? (
             <div className="row nx">
               {prev ? <a className="btn sm" href={'/' + prev[0]}>← {prev[1]}</a> : <span />}
@@ -157,11 +177,13 @@ export default function AppShell({ route }) {
               )}
             </div>
           ) : null}
+          </div>
         </main>
         <Footer />
       </div>
       {state.cm ? <CompareModal /> : null}
       <AnalysisOverlay />
+      <WorkspaceMotion route={route} />
     </div>
   );
 }

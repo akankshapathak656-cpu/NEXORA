@@ -473,7 +473,7 @@ export default function Profile({ candidates, job }) {
           <button key={t} role="tab" aria-selected={t == state.tab} onClick={() => setState({ tab: t })}>{t}</button>
         ))}
       </div>
-      <div className="card" role="tabpanel">{panels[state.tab] || panels.Overview}</div>
+      <div key={c.id + '-' + state.tab} className="card nx-cand-enter" role="tabpanel">{panels[state.tab] || panels.Overview}</div>
     </>
   );
 }

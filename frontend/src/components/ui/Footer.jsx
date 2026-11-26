@@ -3,7 +3,7 @@ import { Plate } from './Plate.jsx';
 // Legacy: foot(). The compact app footer.
 export function Footer() {
   return (
-    <footer className="foot" style={{ border: 0, padding: 0 }}>
+    <footer className="foot" style={{ border: 0 }}>
       <span>
         © 2026 NEXORA · Frontend demo with sample data ·{' '}
         <a href="/terms" style={{ textDecoration: 'underline' }}>

@@ -1,8 +1,9 @@
 // Shared AI Pool Executive Overview card used on both Step 2 (/match) and Dashboard (/dashboard).
-// Automatically resolves the active job's candidate pool (including sample seeds) on the spot.
+// Silently hydrates cached backend analyses on mount and runs AI pool analysis on explicit user action.
 import { useEffect, useState } from 'react';
 import { useAppState, setState } from '../store/state.js';
 import { candidateApiId, resolvePoolLive } from '../store/actions.js';
+import { getJobAnalyses } from '../lib/api.js';
 import { useToast } from './ui/Toast.jsx';
 import { go } from '../routes.js';
 
@@ -14,23 +15,41 @@ export default function PoolOverviewCard({ job, candidates, compact = false }) {
 
   const aiConfig = state.aiConfig;
   const overview = job && state.poolOverviews ? state.poolOverviews[job.t] : null;
+  const jobApiId = job && state.jobApiIds ? state.jobApiIds[job.t] : null;
   const progress =
     state.poolProgress && job && state.poolProgress.jobTitle === job.t ? state.poolProgress : null;
   const hasOverview = !!(overview && overview.candidate_count > 0);
   const busy = manualBusy || !!progress;
 
-  // Auto-resolve pool on the spot when landing on a job that has no overview yet.
+  // Silently hydrate cached backend analyses/overview when this job is already synced, without triggering overlays or LLM calls.
   useEffect(() => {
-    if (!job || !candidates || !candidates.length) return;
+    if (!job) return;
     setErr('');
-    if (state.poolOverviews && state.poolOverviews[job.t] && state.poolOverviews[job.t].candidate_count > 0) {
-      return;
-    }
-    resolvePoolLive(job, candidates, { force: false }).catch(e => {
-      setErr((e && e.message) || 'Backend unavailable — showing local seed scores');
-    });
+    if (!jobApiId || state.poolOverviews?.[job.t]) return;
+    let cancelled = false;
+    getJobAnalyses(jobApiId)
+      .then(existing => {
+        if (cancelled || !existing) return;
+        const hasAnalyses = Array.isArray(existing.analyses) && existing.analyses.length > 0;
+        const hasPoolOverview = !!existing.pool_overview;
+        if (!hasAnalyses && !hasPoolOverview) return;
+        setState(s => {
+          const nextAnalyses = hasAnalyses ? { ...s.aiAnalyses } : s.aiAnalyses;
+          if (hasAnalyses) {
+            for (const a of existing.analyses) {
+              nextAnalyses[`${job.t}|${a.candidate_id}`] = a;
+            }
+          }
+          const nextOverviews = hasPoolOverview
+            ? { ...s.poolOverviews, [job.t]: existing.pool_overview }
+            : s.poolOverviews;
+          return { aiAnalyses: nextAnalyses, poolOverviews: nextOverviews };
+        });
+      })
+      .catch(() => { /* silent hydration */ });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job && job.t, candidates.length]);
+  }, [job && job.t, jobApiId]);
 
   if (!job) return null;
 
@@ -50,9 +69,9 @@ export default function PoolOverviewCard({ job, candidates, compact = false }) {
     setManualBusy(true);
     setErr('');
     try {
-      const res = await resolvePoolLive(job, candidates, { force: true });
+      const res = await resolvePoolLive(job, candidates, { force: hasOverview });
       if (res && res.candidate_count > 0) {
-        toast(`Pool overview refreshed for ${job.t}`);
+        toast(hasOverview ? `Pool overview refreshed for ${job.t}` : `Pool analysed for ${job.t}`);
       }
     } catch (e) {
       const msg = (e && e.message) || 'Could not refresh pool overview';
@@ -169,7 +188,7 @@ export default function PoolOverviewCard({ job, candidates, compact = false }) {
         </>
       ) : (
         <p style={{ marginTop: 10 }}>
-          Preparing executive overview for <b>{job.t}</b>. You can also upload PDF/DOCX resumes in{' '}
+          No AI pool overview yet for <b>{job.t}</b>. Click <b>Analyse pool</b> to score all {candidates.length} candidate{candidates.length === 1 ? '' : 's'} with AI, or upload resumes in{' '}
           <a className="link" href="/upload">Step 1</a>.
         </p>
       )}

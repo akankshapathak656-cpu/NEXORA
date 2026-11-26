@@ -1,7 +1,7 @@
 // Step 4: compare candidates. Port of legacy cands(), tbl(), slCard() and the shortlist helpers (app.js lines 1050-1098).
 import { useEffect, useMemo, useRef } from 'react';
 import { useAppState, setState } from '../store/state.js';
-import { aiAnalysisFor, resolvePoolLive } from '../store/actions.js';
+import { aiAnalysisFor } from '../store/actions.js';
 import { candidateStatus } from '../store/candidates.js';
 import { valid, hidden } from '../lib/scoring.js';
 import { displayName, pct } from '../lib/text.js';
@@ -68,14 +68,6 @@ export default function Cands({ candidates, job }) {
     const rkMap = new Map(rankedPool.map((c, i) => [c.id, i + 1]));
     return { tot: totMap, cov: covMap, RK: rkMap, pool: rankedPool };
   }, [candidates, job, ctx, state.aiAnalyses, state.candApiIds]);
-
-  // Ensure Step 4 has live AI scores when visited before the pool overview is resolved.
-  useEffect(() => {
-    if (!job || !candidates.length) return;
-    if (!state.poolOverviews?.[job.t]) {
-      resolvePoolLive(job, candidates, { force: false }).catch(() => {});
-    }
-  }, [job && job.t, candidates.length]);
 
   const name = c => displayName(c, state.set);
   const statusOf = c => candidateStatus(c, state.status);

@@ -356,7 +356,7 @@ export default function Match({ candidates }) {
             </button>
           ))}
         </div>
-        <div className="stk">
+        <div key={c.id} className="stk nx-cand-enter">
           <div className="card ban">
             <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
               <Avatar name={name} size={56} />

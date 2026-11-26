@@ -91,8 +91,8 @@ export default function CompareModal() {
   };
 
   return (
-    <div className="mo" onClick={e => { if (e.target === e.currentTarget) setState({ cm: 0 }); }}>
-      <div className="card" role="dialog" aria-modal="true" aria-label="Candidate comparison">
+    <div className="mo nx-overlay" onClick={e => { if (e.target === e.currentTarget) setState({ cm: 0 }); }}>
+      <div className="card nx-modal" role="dialog" aria-modal="true" aria-label="Candidate comparison">
         <h3>Compare candidates for {job.t}</h3>
         {l.length < 2 ? (
           <p>Tick at least 2 candidates in the table, then press Compare.</p>
@@ -101,7 +101,7 @@ export default function CompareModal() {
             <div className="sc">
               <table className="mx">
                 <tbody>
-                  <tr>
+                  <tr className="nx-cmp-row" style={{ '--ri': 0 }}>
                     <th>Criterion</th>
                     {l.map(c => (
                       <th key={c.id}>{name(c)}<br /><small>{c.r}</small></th>
@@ -112,7 +112,7 @@ export default function CompareModal() {
                     const df = v && Math.max(...v) != Math.min(...v);
                     const mx = v ? Math.max(...v) : 0;
                     return (
-                      <tr key={ri}>
+                      <tr key={ri} className="nx-cmp-row" style={{ '--ri': Math.min(ri + 1, 16) }}>
                         <td>{df ? <b>{r.label}</b> : r.label}</td>
                         {l.map((c, i) => (
                           <td key={c.id} className={df && v[i] == mx ? 'best' : ''}>{r.cell(c, i)}</td>
@@ -120,7 +120,7 @@ export default function CompareModal() {
                       </tr>
                     );
                   })}
-                  <tr>
+                  <tr className="nx-cmp-row" style={{ '--ri': Math.min(rows.length + 1, 16) }}>
                     <td>Your decision</td>
                     {l.map(c => (
                       <td key={c.id}>

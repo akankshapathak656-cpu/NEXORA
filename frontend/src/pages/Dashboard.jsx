@@ -230,7 +230,7 @@ export default function Dashboard({ route, candidates, job }) {
         <h3>Pipeline &amp; matching</h3>
         <span>Current job and where candidates stand</span>
       </div>
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <div>
             <h3>Current job: {j.t}</h3>
@@ -307,7 +307,7 @@ export default function Dashboard({ route, candidates, job }) {
           </div>
         </div>
       </div>
-      <div className="card" style={{ marginTop: 16 }}>
+      <div className="card">
         <h3>
           Required-skill coverage <span className="chip tr">{j.t}</span>
         </h3>

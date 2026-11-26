@@ -1,0 +1,197 @@
+/* Tasteful motion, route/candidate transitions, and UI polish.
+   Imported after legacy/styles.css so legacy styles stay untouched. */
+
+@keyframes nxPageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nxCandEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes nxOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nxModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nxShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Route transition */
+.nx-page-enter {
+  animation: nxPageEnter 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Candidate / tab switch transition */
+.nx-cand-enter {
+  animation: nxCandEnter 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Smooth ScoreRing and progress bar sweeps when live AI scores arrive */
+svg .rg {
+  transition: stroke-dasharray 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.bar > i {
+  transition: width 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Staggered subtle entrance for KPI tiles */
+.kpis .kp {
+  animation: nxCandEnter 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+}
+.kpis .kp:nth-child(1) { animation-delay: 20ms; }
+.kpis .kp:nth-child(2) { animation-delay: 55ms; }
+.kpis .kp:nth-child(3) { animation-delay: 90ms; }
+.kpis .kp:nth-child(4) { animation-delay: 125ms; }
+.kpis .kp:nth-child(5) { animation-delay: 160ms; }
+.kpis .kp:nth-child(6) { animation-delay: 195ms; }
+
+.kpis .kp:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.18);
+}
+
+/* Tactile polish on interactive cards, list rows, buttons, tabs */
+.card {
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.li.pk,
+.dcd {
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.2s ease;
+}
+
+.li.pk:hover,
+.dcd:hover {
+  transform: translateX(2px);
+}
+
+.btn {
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.2s ease, opacity 0.16s ease;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -10px rgba(0, 0, 0, 0.28);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.tabs button {
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.chip {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Ensure Recruiter review panel (.rp > .rv) is always visible and never stuck at opacity: 0 */
+.rp .rv {
+  opacity: 1 !important;
+  translate: none !important;
+}
+
+/* Analysis progress overlay motion */
+.nx-overlay {
+  animation: nxOverlayIn 0.22s ease-out both;
+}
+
+.nx-modal {
+  animation: nxModalIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.nx-bar-shimmer > i {
+  background-image: linear-gradient(
+    90deg,
+    var(--a) 0%,
+    color-mix(in srgb, var(--a) 60%, #ffffff) 50%,
+    var(--a) 100%
+  );
+  background-size: 200% 100%;
+  animation: nxShimmer 1.4s linear infinite;
+}
+
+/* CompareModal staggered row entrance */
+@keyframes nxCmpRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nx-cmp-row {
+  animation: nxCmpRowIn 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) calc(80ms + var(--ri, 0) * 24ms) both;
+}
+
+/* Smooth GPU-composited sliding indicators */
+.s2-pill,
+.s2-ti {
+  will-change: transform, height, width;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .nx-page-enter,
+  .nx-cand-enter,
+  .nx-overlay,
+  .nx-modal,
+  .nx-cmp-row,
+  .kpis .kp,
+  .nx-bar-shimmer > i {
+    animation: none !important;
+  }
+  svg .rg,
+  .bar > i,
+  .kpis .kp,
+  .card,
+  .li.pk,
+  .dcd,
+  .btn,
+  .tabs button,
+  .chip {
+    transition: none !important;
+  }
+}

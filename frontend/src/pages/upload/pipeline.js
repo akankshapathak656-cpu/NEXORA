@@ -4,7 +4,7 @@
 import { getState, setState } from '../../store/state.js';
 import { candidatesFromState } from '../../store/candidates.js';
 import { allJobs, resumeContext, skillVocabulary } from '../../store/context.js';
-import { addCandidate, saveCandidate, ensureJobSynced, saveAiAnalysis, savePoolOverview } from '../../store/actions.js';
+import { addCandidate, saveCandidate, ensureJobSynced, saveAiAnalysis, savePoolOverview, resolvePoolLive } from '../../store/actions.js';
 import { extractResume, createCandidate, analyzeResumes } from '../../lib/api.js';
 import { rpStructure, rpSkills, rpDetails, resumeDraft, sampleFiles } from '../../lib/resume.js';
 import { parseEx, vocabulary } from '../../lib/text.js';
@@ -314,8 +314,10 @@ async function analyse(initial, id, toast) {
 export function runSample() {
   pkId++;
   const s = getState();
-  setState({ busy: 0, up: sampleFiles(candidatesFromState(s), NS), upS: 1, pd: null, stage: 0 });
+  const list = candidatesFromState(s);
+  setState({ busy: 0, up: sampleFiles(list, NS), upS: 1, pd: null, stage: 0 });
   startTicker();
+  resolvePoolLive(currentJob(s), list, { force: false }).catch(() => {});
 }
 
 // ---------- drafts and saved candidates ----------

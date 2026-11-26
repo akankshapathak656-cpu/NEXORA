@@ -1,0 +1,8 @@
+/* Port-specific layout rules. The legacy stylesheet (src/legacy/styles.css) is kept as is. */
+
+/* Vertical rhythm for the content of an app page. The legacy markup had no spacing between sections. */
+.page-stack {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
