@@ -5237,7 +5237,7 @@
       const cs = () => `<label>Candidate <select onchange="S.sel=+this.value;S.mail='draft';render()">${ranked(C).map(c => `<option value="${c.id}" ${c.id == S.sel ? 'selected' : ''}>${E(c.n)} · ${E(c.r)}</option>`).join('')}</select></label>`;
       let tmr;
       /* Backend integration: local scoring stays authoritative; CRUD is synced to FastAPI. */
-      const API_BASE = 'https://urban-space-memory-qvgqwqj744ppfj9v-8000.app.github.dev';
+      const API_BASE = const API_BASE = 'https://nexora-nquf.onrender.com';
       const apiRequest = async (path, options = {}) => {
          const response = await fetch(API_BASE + path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
          if (!response.ok) { const detail = await response.text(); throw new Error(detail || ('API request failed (' + response.status + ')')) }
