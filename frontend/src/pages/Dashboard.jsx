@@ -84,22 +84,22 @@ export default function Dashboard({ route, candidates, job }) {
   const applyFilter = stf => setState({ stf, q: '', sf: 'All', page: 0, role: 'All', min: 0 });
 
   const att = [];
-  if (nNew) att.push({ href: '#cands', pick: () => applyFilter(['New']), t: `${nNew} candidate${nNew === 1 ? '' : 's'} still marked New`, d: `No recruiter has reviewed ${nNew === 1 ? 'this candidate' : 'them'} yet.`, w: 1 });
-  if (nSh) att.push({ href: '#cands', pick: () => applyFilter(['Shortlisted', 'Approved']), t: `${nSh} shortlisted candidate${nSh === 1 ? '' : 's'} waiting for the next step`, d: `Move ${nSh === 1 ? 'this candidate' : 'them'} to Interview or record a decision.`, w: 1 });
-  if (hu) att.push({ href: '#roles', pick: null, t: `${hu} hidden fit${hu === 1 ? '' : 's'} not yet considered for another role`, d: `Open multi-role discovery to review ${hu === 1 ? 'it' : 'them'}.`, w: 1 });
+  if (nNew) att.push({ href: '/cands', pick: () => applyFilter(['New']), t: `${nNew} candidate${nNew === 1 ? '' : 's'} still marked New`, d: `No recruiter has reviewed ${nNew === 1 ? 'this candidate' : 'them'} yet.`, w: 1 });
+  if (nSh) att.push({ href: '/cands', pick: () => applyFilter(['Shortlisted', 'Approved']), t: `${nSh} shortlisted candidate${nSh === 1 ? '' : 's'} waiting for the next step`, d: `Move ${nSh === 1 ? 'this candidate' : 'them'} to Interview or record a decision.`, w: 1 });
+  if (hu) att.push({ href: '/roles', pick: null, t: `${hu} hidden fit${hu === 1 ? '' : 's'} not yet considered for another role`, d: `Open multi-role discovery to review ${hu === 1 ? 'it' : 'them'}.`, w: 1 });
   PIPELINE.filter(p => !candidates.some(c => p[1].includes(status(c)))).forEach(p =>
-    att.push({ href: '#cands', pick: () => applyFilter(null), t: 'No candidates at ' + p[0], d: 'This pipeline stage is currently empty.', w: 0 }),
+    att.push({ href: '/cands', pick: () => applyFilter(null), t: 'No candidates at ' + p[0], d: 'This pipeline stage is currently empty.', w: 0 }),
   );
   const at = att.slice(0, 4);
 
   const reviewFilter = () => applyFilter(['New', 'Review', 'Needs review']);
   const kpis = [
-    { label: 'Active candidates', value: N, sub: `${candidates.length} in pool · ${candidates.length - N} hired or rejected`, href: '#cands', pick: () => applyFilter(null), cls: '', action: 'View candidates →' },
-    { label: 'Awaiting review', value: pe.length, sub: `${nNew} New · ${nRev} Needs review`, href: '#cands', pick: reviewFilter, cls: pe.length ? 'w' : 'm', action: 'Review now →' },
-    { label: 'Average match', value: avg == null ? '—' : avg + '%', sub: N ? 'Active candidates for ' + j.t : 'No active candidates', href: '#match', cls: '', action: 'Open analysis →' },
-    { label: 'Strong matches', value: strong, sub: 'Score 80+ for ' + j.t + ' (demo threshold)', href: '#match', cls: '', action: 'See ranking →' },
-    { label: 'Hidden fits', value: hf.length, sub: 'Weak here, stronger for another role', href: '#roles', cls: hf.length ? '' : 'm', action: 'Explore roles →' },
-    { label: 'Duplicate flags', value: dupO.length, sub: 'Unreviewed pairs at 80%+ similarity (sample data)', href: '#dups', cls: dupO.length ? 'w' : 'm', action: 'Review pairs →' },
+    { label: 'Active candidates', value: N, sub: `${candidates.length} in pool · ${candidates.length - N} hired or rejected`, href: '/cands', pick: () => applyFilter(null), cls: '', action: 'View candidates →' },
+    { label: 'Awaiting review', value: pe.length, sub: `${nNew} New · ${nRev} Needs review`, href: '/cands', pick: reviewFilter, cls: pe.length ? 'w' : 'm', action: 'Review now →' },
+    { label: 'Average match', value: avg == null ? '—' : avg + '%', sub: N ? 'Active candidates for ' + j.t : 'No active candidates', href: '/match', cls: '', action: 'Open analysis →' },
+    { label: 'Strong matches', value: strong, sub: 'Score 80+ for ' + j.t + ' (demo threshold)', href: '/match', cls: '', action: 'See ranking →' },
+    { label: 'Hidden fits', value: hf.length, sub: 'Weak here, stronger for another role', href: '/roles', cls: hf.length ? '' : 'm', action: 'Explore roles →' },
+    { label: 'Duplicate flags', value: dupO.length, sub: 'Unreviewed pairs at 80%+ similarity (sample data)', href: '/dups', cls: dupO.length ? 'w' : 'm', action: 'Review pairs →' },
   ];
 
   const doneCount = obCount(state.ob.done);

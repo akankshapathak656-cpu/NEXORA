@@ -47,7 +47,7 @@ export function PublicNav({ signedIn = false, onSectionLink }) {
           ))}
         </nav>
         <div className="row" style={{ margin: 0 }}>
-          <a className="btn p" href={signedIn ? '#dashboard' : '#login'}>
+          <a className="btn p" href={signedIn ? '/dashboard' : '/login'}>
             {signedIn ? 'Open workspace' : 'Open demo'}
           </a>
           <button

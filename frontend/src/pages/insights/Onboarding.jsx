@@ -7,12 +7,12 @@ import { useToast } from '../../components/ui/Toast.jsx';
 
 // [key, title, description, href]
 export const OBS = [
-  ['job', 'Select a job', 'Choose the role you are hiring for, or create a custom one.', '#upload'],
-  ['res', 'Add resumes', 'Upload PDF or DOCX files, or load the sample resumes.', '#upload'],
-  ['ana', 'Analyze candidates', 'Read the evidence behind each score and tick what to verify.', '#match'],
-  ['alt', 'Explore alternative role matches', 'See which candidates may fit a different role better.', '#roles'],
-  ['cmp', 'Compare candidates', 'Tick 2 or 3 candidates and review them side by side.', '#cands'],
-  ['dec', 'Make a recruiter-controlled decision', 'Shortlist, interview or reject. Nothing happens automatically.', '#profile'],
+  ['job', 'Select a job', 'Choose the role you are hiring for, or create a custom one.', '/upload'],
+  ['res', 'Add resumes', 'Upload PDF or DOCX files, or load the sample resumes.', '/upload'],
+  ['ana', 'Analyze candidates', 'Read the evidence behind each score and tick what to verify.', '/match'],
+  ['alt', 'Explore alternative role matches', 'See which candidates may fit a different role better.', '/roles'],
+  ['cmp', 'Compare candidates', 'Tick 2 or 3 candidates and review them side by side.', '/cands'],
+  ['dec', 'Make a recruiter-controlled decision', 'Shortlist, interview or reject. Nothing happens automatically.', '/profile'],
 ];
 
 // Number of upload analysis stages (legacy ST). The upload page owns the list.
